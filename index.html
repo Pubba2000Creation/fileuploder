@@ -1,78 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Upload Files to DigitalOcean Spaces</title>
 
     <!-- Include Dropzone.js CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css" rel="stylesheet">
-
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css"
+      rel="stylesheet"
+    />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f7fc;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-            width: 80%;
-            max-width: 600px;
-        }
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f7fc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        width: 80%;
+        max-width: 600px;
+      }
+      h2 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="container">
-        <h2>Upload Files to DigitalOcean Spaces</h2>
-        <form action="#" class="dropzone" id="myDropzone">
-            <!-- Dropzone will automatically add the drop area here -->
-        </form>
+      <h2>Upload Files to DigitalOcean Spaces</h2>
+
+      <!-- Dropzone form will be hidden, we'll trigger file selection with a button -->
+      <form action="#" class="dropzone" id="myDropzone" style="display: none">
+        <!-- Dropzone will automatically add the drop area here -->
+      </form>
+
+      <button id="uploadButton">Choose Files to Upload</button>
     </div>
 
     <!-- Include Dropzone.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
 
     <script>
-        // Initialize Dropzone with custom settings
-        Dropzone.autoDiscover = false;
+      // Fetch the pre-signed URL from your server
+      fetch("http://localhost:3000")
+        .then((response) => response.json())
+        .then((data) => {
+          const signedUrl = data.presignedUrl;
 
-        var myDropzone = new Dropzone("#myDropzone", {
-            url: "https://datasetimages.blr1.digitaloceanspaces.com/", // Your DigitalOcean Space URL
-            method: "POST",
-            paramName: "file", // Name of the file parameter for the server
-            maxFilesize: 50, // Set file size limit to 50MB (you can change this as needed)
+          // Initialize Dropzone with the pre-signed URL
+          Dropzone.autoDiscover = false;
+          var myDropzone = new Dropzone("#myDropzone", {
+            url: signedUrl, // Use the pre-signed URL for the file upload
+            method: "PUT", // Use PUT for file upload with pre-signed URL
+            paramName: "file", // Field name for the file
+            maxFilesize: 50, // Set file size limit to 50MB
             acceptedFiles: "image/*,application/pdf", // Accept only images and PDFs
-            headers: {
-                "Authorization": "Bearer YOUR_ACCESS_KEY" // Use your access key for authentication
+            success: function (file, response) {
+              console.log("File uploaded successfully", file);
+              alert("File uploaded successfully!");
             },
-            init: function() {
-                this.on("sending", function(file, xhr, formData) {
-                    // Add custom metadata for the file (e.g., store it in a specific folder)
-                    formData.append("key", "uploads/" + file.name); // The file will be saved in the "uploads/" folder
-                });
+            error: function (file, errorMessage) {
+              console.error("Error uploading file", errorMessage);
+              alert("Error uploading the file. Please try again.");
             },
-            success: function(file, response) {
-                console.log("File uploaded successfully", file);
-                alert('File uploaded successfully!');
-            },
-            error: function(file, errorMessage) {
-                console.error("Error uploading file", errorMessage);
-                alert('Error uploading the file. Please try again.');
-            }
+          });
+
+          // Trigger file selection when the Upload Button is clicked
+          document
+            .getElementById("uploadButton")
+            .addEventListener("click", function () {
+              myDropzone.hiddenFileInput.click(); // This simulates the file input click event to open the file dialog
+            });
+        })
+        .catch((error) => {
+          console.error("Error fetching pre-signed URL:", error);
         });
     </script>
-
-</body>
+  </body>
 </html>
